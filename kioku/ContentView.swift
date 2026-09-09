@@ -1,80 +1,111 @@
-//
-//  ContentView.swift
-//  kioku
-//
-//  Created by Cristobal Flores Villegas on 08-09-26.
-//
-
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Environment(\.modelContext) private var context
+
+    @Query(sort: [SortDescriptor(\Note.updatedAt, order: .reverse)]) private var notes: [Note]
+
+    @State private var searchText = ""
+    @State private var selectedNote: Note?
+
+    init() {}
+
+    var filteredNotes: [Note] {
+        let base = notes.filter {
+            searchText.isEmpty ||
+            $0.title.localizedCaseInsensitiveContains(searchText) ||
+            $0.body.localizedCaseInsensitiveContains(searchText) ||
+            $0.tags.localizedCaseInsensitiveContains(searchText)
+        }
+        return base.sorted { $0.pinned && !$1.pinned }
+    }
 
     var body: some View {
-        NavigationViewWrapper {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
+        NavigationSplitView {
+            List(selection: $selectedNote) {
+                ForEach(filteredNotes) { note in
+                    NoteRow(note: note)
+                        .tag(note)
+                        .swipeActions(edge: .leading) {
+                            Button {
+                                togglePin(note)
+                            } label: {
+                                Label(note.pinned ? "Despin" : "Pin", systemImage: note.pinned ? "pin.slash" : "pin")
+                            }
+                            .tint(.orange)
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                delete(note)
+                            } label: {
+                                Label("Borrar", systemImage: "trash")
+                            }
+                        }
                 }
-                .onDelete(perform: deleteItems)
             }
-#if os(macOS)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-#endif
+            .searchable(text: $searchText, prompt: "Buscar notas o #tag")
+            .navigationTitle("Kioku")
             .toolbar {
-#if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-#endif
                 ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                    Button(action: addNote) {
+                        Label("Nueva nota", systemImage: "square.and.pencil")
                     }
+                    .keyboardShortcut("n", modifiers: .command)
                 }
             }
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+        } detail: {
+            if let note = selectedNote {
+                NoteEditorView(note: note)
+                    .id(note.persistentModelID)
+            } else {
+                Text("Selecciona o crea una nota")
+                    .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func addNote() {
+        let note = Note()
+        context.insert(note)
+        selectedNote = note
+    }
+
+    private func togglePin(_ note: Note) {
+        note.pinned.toggle()
+        note.updatedAt = .now
+    }
+
+    private func delete(_ note: Note) {
+        if selectedNote == note { selectedNote = nil }
+        context.delete(note)
     }
 }
 
-fileprivate struct NavigationViewWrapper<Content: View>: View {
-    let content: () -> Content
+private struct NoteRow: View {
+    @Bindable var note: Note
 
     var body: some View {
-#if os(macOS)
-        NavigationSplitView {
-            content()
-        } detail: {
-            Text("Select an item")
+        HStack {
+            if note.pinned {
+                Image(systemName: "pin.fill")
+                    .foregroundStyle(.orange)
+                    .font(.caption)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(note.title.isEmpty ? "Sin título" : note.title)
+                    .font(.headline)
+                    .lineLimit(1)
+                Text(note.body)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
         }
-#else
-        content()
-#endif
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(for: Note.self, inMemory: true)
 }
