@@ -6,7 +6,8 @@ struct NoteEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             TextField("Título", text: $note.title)
-                .font(.title2.bold())
+                .font(Ink.body(20))
+                .foregroundStyle(.black)
                 .textFieldStyle(.plain)
                 .padding()
                 .onChange(of: note.title) { note.updatedAt = .now }
@@ -14,7 +15,8 @@ struct NoteEditorView: View {
             Divider()
 
             TextEditor(text: $note.body)
-                .font(.custom("Yomogi-Regular", size: 17))
+                .font(Ink.body(17))
+                .foregroundStyle(.black)
                 .padding(.horizontal, 12)
                 .scrollContentBackground(.hidden)
                 .onChange(of: note.body) { note.updatedAt = .now }

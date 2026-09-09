@@ -13,6 +13,46 @@ extension Color {
     }
 }
 
+/// Un color de nota son tres tonos: el papel, la rayita saturada del borde y la tinta.
+struct NoteColor {
+    let hex: String     // papel, y el valor que se guarda en Note.colorHex
+    let dashHex: String
+    let inkHex: String
+
+    var paper: Color { Color(hex: hex) }
+    var dash: Color { Color(hex: dashHex) }
+    var ink: Color { Color(hex: inkHex) }
+}
+
 enum NoteColors {
-    static let palette = ["#B5EAD7", "#AEDFF7", "#B7E4C7", "#D9C7F0", "#FFE07A", "#FFC1B6"]
+    static let all: [NoteColor] = [
+        NoteColor(hex: "#FCE795", dashHex: "#E0AD08", inkHex: "#3A3008"),
+        NoteColor(hex: "#FBCFA6", dashHex: "#E2762A", inkHex: "#422413"),
+        NoteColor(hex: "#FAC4D1", dashHex: "#DC4570", inkHex: "#40161F"),
+        NoteColor(hex: "#D9C7FA", dashHex: "#7C4DEE", inkHex: "#2A1B44"),
+        NoteColor(hex: "#BEDDFA", dashHex: "#2280D6", inkHex: "#13293A"),
+        NoteColor(hex: "#B4E8D0", dashHex: "#0E9B6E", inkHex: "#0F2E23"),
+        NoteColor(hex: "#E3D3B4", dashHex: "#A37B3C", inkHex: "#372C18"),
+        NoteColor(hex: "#CBD6E2", dashHex: "#4E6579", inkHex: "#1A242E"),
+    ]
+
+    static let palette: [String] = all.map(\.hex)
+
+    static func at(_ hex: String) -> NoteColor {
+        all.first { $0.hex.caseInsensitiveCompare(hex) == .orderedSame } ?? all[0]
+    }
+}
+
+extension Note {
+    var palette: NoteColor { NoteColors.at(colorHex) }
+
+    /// Título para los tabs y listas: el propio, o la primera línea del cuerpo.
+    var displayTitle: String {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        let line = body.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""
+        let clean = line.trimmingCharacters(in: .whitespaces)
+        if clean.isEmpty { return "Sin título" }
+        return clean.count > 60 ? String(clean.prefix(60)) + "…" : clean
+    }
 }

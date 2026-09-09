@@ -8,7 +8,7 @@ final class Note {
     var tags: String = ""
     var pinned: Bool = false
     var completed: Bool = false
-    var colorHex: String = "#FFE07A"
+    var colorHex: String = "#FCE795"
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
 
