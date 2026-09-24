@@ -56,3 +56,26 @@ extension Note {
         return clean.count > 60 ? String(clean.prefix(60)) + "…" : clean
     }
 }
+
+#if os(macOS)
+import AppKit
+
+/// El escritorio donde viven las notas: washi cálido en modo claro, sumi en oscuro.
+/// El único color fuerte es el bermellón del hanko.
+enum Washi {
+    static let desk = adaptive(light: "#EFE8DC", dark: "#1D1A17")
+    static let deskRaised = adaptive(light: "#E6DDCE", dark: "#26221E")
+    static let ink = adaptive(light: "#2A2420", dark: "#E9E1D3")
+    static let inkSoft = adaptive(light: "#7A6E62", dark: "#948A7C")
+    static let rule = adaptive(light: "#D5CAB8", dark: "#35302A")
+    static let shu = Color(hex: "#C8402A")      // bermellón, sólo para el sello
+    static let shuInk = Color(hex: "#FBEFE6")
+
+    private static func adaptive(light: String, dark: String) -> Color {
+        Color(NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(Color(hex: dark)) : NSColor(Color(hex: light))
+        })
+    }
+}
+#endif

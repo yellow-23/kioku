@@ -14,6 +14,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    // El autosave de SwiftData corre con el run loop; al salir de golpe (⌘Q,
+    // reinstalar) lo último que se editó o borró se perdía.
+    func applicationWillTerminate(_ notification: Notification) {
+        try? AppContainer.shared.mainContext.save()
+    }
+
     private func setupStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = NSImage(systemSymbolName: "note.text", accessibilityDescription: "Kioku")

@@ -275,6 +275,13 @@ struct VerticalTab: View {
         ZStack(alignment: .top) {
             edgeTabShape()
                 .fill(note.palette.paper)
+                // Fijada: contorno saturado en vez de una marca chica. El borde
+                // se ve entero aunque el tab siguiente tape la mitad del tab.
+                .overlay {
+                    if note.pinned {
+                        edgeTabShape().strokeBorder(note.palette.dash, lineWidth: 2)
+                    }
+                }
                 .shadow(color: .black.opacity(isOpen || hovering ? 0.32 : 0.22),
                         radius: isOpen || hovering ? 9 : 6, x: -3, y: 2)
             Text(note.displayTitle.uppercased())
@@ -282,7 +289,7 @@ struct VerticalTab: View {
                 .tracking(Ink.tabTracking)
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .foregroundStyle(note.palette.ink.opacity(hovering ? 1 : 0.85))
+                .foregroundStyle(note.palette.ink.opacity(note.pinned || hovering ? 1 : 0.8))
                 .frame(width: max(20, labelBox - DeckGeom.labelInset), height: DeckGeom.tabWidth)
                 .rotationEffect(.degrees(90))
                 .frame(width: DeckGeom.tabWidth, height: labelBox)
@@ -294,24 +301,31 @@ struct VerticalTab: View {
         .frame(width: DeckGeom.tabWidth)
         // asoma hacia adentro para que se vea que está levantado
         .offset(x: hovering ? -10 : 0)
+        // Caja fija: el frame de acá no se mueve con el hover, así el área que
+        // detecta el mouse no persigue al tab mientras se desliza. Sin esto el
+        // puntero quedaba fuera apenas empezaba la animación, el tab volvía, y
+        // los dos vecinos se turnaban el hover a 60 fps.
+        .frame(width: DeckGeom.tabWidth, height: height, alignment: .top)
+        // En reposo sólo escucha su franja visible — los frames se solapan y si
+        // no, el tab de arriba robaría el hover del de abajo. Ya levantado
+        // escucha todo su alto, que es lo que se ve.
+        .contentShape(TabHitBox(height: hovering ? height : strip))
         // sólo el tab bajo el mouse sube; darle zIndex a todos reordena vecinos
         // y rompe el solape de tejas
         .zIndex(hovering ? 900 : 0)
-        .contentShape(Rectangle())
-        .overlay(alignment: .topTrailing) {
-            if note.pinned {
-                Circle()
-                    .fill(note.palette.dash)
-                    .frame(width: 5, height: 5)
-                    .padding(.top, 7)
-                    .padding(.trailing, 9)
-            }
-        }
         .onTapGesture(perform: action)
         .onHover { hovering = $0 }
         .animation(.spring(response: 0.28, dampingFraction: 0.8), value: isOpen)
         .animation(.spring(response: 0.26, dampingFraction: 0.78), value: hovering)
         .help(note.displayTitle)
+    }
+}
+
+/// El rectángulo que escucha el mouse: pegado al tope y de alto variable.
+private struct TabHitBox: Shape {
+    let height: CGFloat
+    func path(in r: CGRect) -> Path {
+        Path(CGRect(x: r.minX, y: r.minY, width: r.width, height: min(height, r.height)))
     }
 }
 

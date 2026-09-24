@@ -13,7 +13,7 @@ struct StickyNoteView: View {
                 TextField("Título", text: $note.title)
                     .textFieldStyle(.plain)
                     .font(Ink.body(19))
-                    .foregroundStyle(.black)
+                    .foregroundStyle(ink)
                 Spacer(minLength: 6)
                 Button {
                     withAnimation(.spring(response: 0.25, dampingFraction: 0.5)) {
@@ -43,10 +43,19 @@ struct StickyNoteView: View {
 
             TextEditor(text: $note.body)
                 .font(Ink.body(17))
-                .foregroundStyle(.black)
+                .foregroundStyle(ink)
                 .scrollContentBackground(.hidden)
                 .padding(.horizontal, 10)
                 .padding(.top, 6)
+                // 記 de "記憶": marca de agua detrás del texto, no de la barra de
+                // abajo, así nunca queda debajo de un botón
+                .background(alignment: .bottomTrailing) {
+                    Text("記")
+                        .font(Ink.body(92))
+                        .foregroundStyle(ink.opacity(0.06))
+                        .offset(x: -6, y: -4)
+                        .allowsHitTesting(false)
+                }
 
             Divider().opacity(0.3)
 
@@ -78,16 +87,8 @@ struct StickyNoteView: View {
         }
         .background(
             note.palette.paper
-                .overlay(alignment: .bottomTrailing) {
-                    // 記 de "記憶" (kioku, memoria) — marca de agua sutil, guiño al nombre de la app
-                    Text("記")
-                        .font(Ink.body(92))
-                        .foregroundStyle(.black.opacity(0.05))
-                        .offset(x: 18, y: 22)
-                        .allowsHitTesting(false)
-                }
-                .clipped()
         )
+        .clipped()
         .onChange(of: note.title) { note.updatedAt = .now }
         .onChange(of: note.body) { note.updatedAt = .now }
         .background {
